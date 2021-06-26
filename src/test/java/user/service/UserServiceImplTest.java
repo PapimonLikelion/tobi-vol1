@@ -24,9 +24,12 @@ import static user.domain.User.MINIMUM_RECOMMEND_FOR_GOLD;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = DaoFactoryForTest.class)
-public class UserServiceTest {
+public class UserServiceImplTest {
     @Autowired
     UserService userService;
+
+    @Autowired
+    UserServiceImpl userServiceImpl;
 
     @Autowired
     UserDao userDao;
@@ -93,12 +96,14 @@ public class UserServiceTest {
 
     @Test
     public void upgradeAllOrNothingTransactional() {
-        final UserService testUserService = new TestUserService(userDao, platformTransactionManager, mailSender, users.get(3).getId());
+        final TestUserService testUserService = new TestUserService(userDao, mailSender, users.get(3).getId());
+
+        final UserServiceTx userServiceTx = new UserServiceTx(testUserService, platformTransactionManager);
 
         users.forEach(user -> userDao.add(user));
 
         try {
-            testUserService.upgradeLevels();
+            userServiceTx.upgradeLevels();
             fail("Test User Service 실패!");
         } catch (Exception e) {
         }
@@ -108,13 +113,13 @@ public class UserServiceTest {
 
     @Test
     @DirtiesContext
-    public void upgradeLevelsMocking() throws Exception {
+    public void upgradeLevelsMocking() {
         users.forEach(user -> userDao.add(user));
 
         final MockMailSender mockMailSender = new MockMailSender();
-        userService.setMailSender(mockMailSender);
+        userServiceImpl.setMailSender(mockMailSender);
 
-        userService.upgradeLevels();
+        userServiceImpl.upgradeLevels();
 
         checkLevelUpgraded(users.get(0), false);
         checkLevelUpgraded(users.get(1), true);

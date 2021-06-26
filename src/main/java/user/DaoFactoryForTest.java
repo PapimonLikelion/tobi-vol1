@@ -11,7 +11,8 @@ import user.connection.TestConnectionMaker;
 import user.dao.JdbcContext;
 import user.dao.UserDaoJdbc;
 import user.service.DummyMailSender;
-import user.service.UserService;
+import user.service.UserServiceImpl;
+import user.service.UserServiceTx;
 
 import javax.sql.DataSource;
 import java.sql.Driver;
@@ -19,8 +20,13 @@ import java.sql.Driver;
 @Configuration
 public class DaoFactoryForTest {
     @Bean
-    public UserService userService() {
-        return new UserService(userDao(), platformTransactionManager(), mailSender());
+    public UserServiceTx userService() {
+        return new UserServiceTx(userServiceImpl(), platformTransactionManager());
+    }
+
+    @Bean
+    public UserServiceImpl userServiceImpl() {
+        return new UserServiceImpl(userDao(), mailSender());
     }
 
     @Bean
