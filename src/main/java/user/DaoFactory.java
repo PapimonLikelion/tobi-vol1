@@ -13,12 +13,18 @@ import user.dao.JdbcContext;
 import user.dao.UserDaoJdbc;
 import user.service.UserServiceImpl;
 import user.service.UserServiceTx;
+import user.service.message.MessageFactoryBean;
 
 import javax.sql.DataSource;
 import java.sql.Driver;
 
 @Configuration
 public class DaoFactory {
+    @Bean
+    public MessageFactoryBean message() {
+        return new MessageFactoryBean("Factory Bean");
+    }
+
     @Bean
     public UserServiceTx userService() {
         return new UserServiceTx(userServiceImpl(), platformTransactionManager());

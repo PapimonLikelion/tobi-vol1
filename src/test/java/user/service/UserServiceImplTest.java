@@ -14,6 +14,7 @@ import user.dao.MockUserDao;
 import user.dao.UserDao;
 import user.domain.Level;
 import user.domain.User;
+import user.service.mail.MockMailSender;
 
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
