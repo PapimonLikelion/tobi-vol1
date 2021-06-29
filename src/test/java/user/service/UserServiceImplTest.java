@@ -15,6 +15,7 @@ import user.dao.UserDao;
 import user.domain.Level;
 import user.domain.User;
 
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
@@ -105,6 +106,32 @@ public class UserServiceImplTest {
 
         try {
             userServiceTx.upgradeLevels();
+            fail("Test User Service 실패!");
+        } catch (Exception e) {
+        }
+
+        checkLevelUpgraded(users.get(1), false);
+    }
+
+    @Test
+    public void upgradeAllOrNothingTransactionalWithDynamicProxy() {
+        final TestUserService testUserService = new TestUserService(userDao, mailSender, users.get(3).getId());
+
+        final TransactionHandler transactionHandler = new TransactionHandler();
+        transactionHandler.setTarget(testUserService);
+        transactionHandler.setTransactionManager(platformTransactionManager);
+        transactionHandler.setPattern("upgradeLevels");
+
+        UserService userService = (UserService)Proxy.newProxyInstance(
+                getClass().getClassLoader(),
+                new Class[] {UserService.class},
+                transactionHandler
+        );
+
+        users.forEach(user -> userDao.add(user));
+
+        try {
+            userService.upgradeLevels();
             fail("Test User Service 실패!");
         } catch (Exception e) {
         }
