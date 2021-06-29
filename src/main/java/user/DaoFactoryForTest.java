@@ -10,6 +10,8 @@ import user.connection.ConnectionMaker;
 import user.connection.TestConnectionMaker;
 import user.dao.JdbcContext;
 import user.dao.UserDaoJdbc;
+import user.service.TxProxyFactoryBean;
+import user.service.UserService;
 import user.service.UserServiceImpl;
 import user.service.UserServiceTx;
 import user.service.mail.DummyMailSender;
@@ -21,12 +23,17 @@ import java.sql.Driver;
 @Configuration
 public class DaoFactoryForTest {
     @Bean
+    public TxProxyFactoryBean userService() {
+        return new TxProxyFactoryBean(userServiceImpl(), platformTransactionManager(), "upgradeLevels", UserService.class);
+    }
+
+    @Bean
     public MessageFactoryBean message() {
         return new MessageFactoryBean("Factory Bean");
     }
 
     @Bean
-    public UserServiceTx userService() {
+    public UserServiceTx userServiceTx() {
         return new UserServiceTx(userServiceImpl(), platformTransactionManager());
     }
 

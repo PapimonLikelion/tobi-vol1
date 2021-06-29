@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.mail.MailSender;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -27,7 +28,7 @@ import static user.domain.User.MINIMUM_RECOMMEND_FOR_GOLD;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = DaoFactoryForTest.class)
-public class UserServiceImplTest {
+public class UserServiceTest {
     @Autowired
     UserService userService;
 
@@ -42,6 +43,9 @@ public class UserServiceImplTest {
 
     @Autowired
     PlatformTransactionManager platformTransactionManager;
+
+    @Autowired
+    ApplicationContext context;
 
     List<User> users;
 
@@ -102,6 +106,24 @@ public class UserServiceImplTest {
         final TestUserService testUserService = new TestUserService(userDao, mailSender, users.get(3).getId());
 
         final UserServiceTx userServiceTx = new UserServiceTx(testUserService, platformTransactionManager);
+
+         users.forEach(user -> userDao.add(user));
+
+        try {
+            userServiceTx.upgradeLevels();
+            fail("Test User Service 실패!");
+        } catch (Exception e) {
+        }
+
+        checkLevelUpgraded(users.get(1), false);
+    }
+
+    @Test
+    public void upgradeAllOrNothingApplicationContext() {
+        final TestUserService testUserService = new TestUserService(userDao, mailSender, users.get(3).getId());
+        final TxProxyFactoryBean txProxyFactoryBean = context.getBean("&userService", TxProxyFactoryBean.class);
+        txProxyFactoryBean.setTarget(testUserService);
+        final UserService userServiceTx = (UserService) txProxyFactoryBean.getObject();
 
         users.forEach(user -> userDao.add(user));
 
