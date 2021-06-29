@@ -10,6 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import user.DaoFactoryForTest;
+import user.dao.MockUserDao;
 import user.dao.UserDao;
 import user.domain.Level;
 import user.domain.User;
@@ -113,23 +114,60 @@ public class UserServiceImplTest {
 
     @Test
     @DirtiesContext
-    public void upgradeLevelsMocking() {
+    public void upgradeLevelsWithMailSendingOption() {
+        //DB 테스트 데이터 준비
         users.forEach(user -> userDao.add(user));
 
+        //메일 발송 여부 확인을 위해 목 오브젝트 DI
         final MockMailSender mockMailSender = new MockMailSender();
         userServiceImpl.setMailSender(mockMailSender);
 
+        //테스트 대상 실행
         userServiceImpl.upgradeLevels();
 
+        //DB에 저장된 결과 확인
         checkLevelUpgraded(users.get(0), false);
         checkLevelUpgraded(users.get(1), true);
         checkLevelUpgraded(users.get(2), false);
         checkLevelUpgraded(users.get(3), true);
         checkLevelUpgraded(users.get(4), false);
 
+        //목 오브젝트를 이용한 결과 확인
         final List<String> requests = mockMailSender.getRequests();
         assertThat(requests.size()).isEqualTo(2);
         assertThat(requests.get(0)).isEqualTo(users.get(1).getEmail());
         assertThat(requests.get(1)).isEqualTo(users.get(3).getEmail());
+    }
+
+    @Test
+    @DirtiesContext
+    public void upgradeLevelsWithMailSendingOptionWithMockDao() {
+        //DB 테스트 데이터 준비
+        final MockUserDao mockUserDao = new MockUserDao(this.users);
+
+        //메일 발송 여부 확인을 위해 목 오브젝트 DI
+        final MockMailSender mockMailSender = new MockMailSender();
+        userServiceImpl.setMailSender(mockMailSender);
+        userServiceImpl.setUserDao(mockUserDao);
+
+        //테스트 대상 실행
+        userServiceImpl.upgradeLevels();
+
+        //DB에 저장된 결과 확인
+        final List<User> updated = mockUserDao.getUpdated();
+        assertThat(updated.size()).isEqualTo(2);
+        checkUserAndLevel(updated.get(0), "성훈", Level.SILVER);
+        checkUserAndLevel(updated.get(1), "영준", Level.GOLD);
+
+        //목 오브젝트를 이용한 결과 확인
+        final List<String> requests = mockMailSender.getRequests();
+        assertThat(requests.size()).isEqualTo(2);
+        assertThat(requests.get(0)).isEqualTo(users.get(1).getEmail());
+        assertThat(requests.get(1)).isEqualTo(users.get(3).getEmail());
+    }
+
+    private void checkUserAndLevel(User updatedUser, String expectedName, Level expectedLevel) {
+        assertThat(updatedUser.getName()).isEqualTo(expectedName);
+        assertThat(updatedUser.getLevel()).isEqualTo(expectedLevel);
     }
 }
